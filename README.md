@@ -4,6 +4,115 @@ This repository contains the complete implementation for the DevOps / Platform E
 
 ---
 
+## Architecture & Workflows
+
+### 1. System Architecture & Request Flow (Parts 1 & 2)
+
+```mermaid
+flowchart TD
+    Client["Client / Automated Harness"]
+    
+    subgraph K8sCluster["Kind Cluster: demo"]
+        subgraph IngressLayer["Ingress Controller (ingress-nginx)"]
+            Ingress["Ingress: demo.local (Port 80/443)"]
+        end
+
+        subgraph ServiceLayer["Service Networking"]
+            SVC["Service: demo-service (ClusterIP: 80 -> 8080)"]
+        end
+
+        subgraph Pods["Deployment: demo-service (2 Replicas)"]
+            Pod1["Pod: demo-service-1<br/>UID: 1001 (non-root)"]
+            Pod2["Pod: demo-service-2<br/>UID: 1001 (non-root)"]
+        end
+
+        subgraph Config["Configuration"]
+            CM["ConfigMap: demo-config<br/>(APP_NAME, VERSION)"]
+        end
+
+        subgraph Health["Kubelet Probes"]
+            Liveness["Liveness Probe: /healthz"]
+            Readiness["Readiness Probe: /healthz"]
+        end
+    end
+
+    Client -->|"HTTP Host: demo.local"| Ingress
+    Ingress --> SVC
+    SVC --> Pod1
+    SVC --> Pod2
+    CM -.->|"Mounted as volume & env"| Pod1
+    CM -.->|"Mounted as volume & env"| Pod2
+    Health -.->|"HTTP GET :8080"| Pod1
+    Health -.->|"HTTP GET :8080"| Pod2
+```
+
+---
+
+### 2. Idempotent Environment Setup Workflow (`setup.sh`)
+
+```mermaid
+flowchart LR
+    Start(["Start ./setup.sh"]) --> CheckCluster{"Kind cluster<br/>'demo' exists?"}
+    
+    CheckCluster -- No --> CreateCluster["Create Kind Cluster<br/>(port mappings 80/443 + ingress label)"]
+    CheckCluster -- Yes --> ReuseCluster["Reuse Existing Cluster"]
+    
+    CreateCluster --> InstallIngress["Install ingress-nginx controller"]
+    ReuseCluster --> InstallIngress
+    
+    InstallIngress --> WaitIngress["Wait for ingress-nginx<br/>admission & controller readiness"]
+    
+    WaitIngress --> BuildImage["Build multi-stage Docker image<br/>(demo-service:1.0.0)"]
+    BuildImage --> LoadImage["Load image into Kind node"]
+    
+    LoadImage --> HelmDeploy["Deploy Helm release<br/>(helm upgrade --install demo ./chart)"]
+    HelmDeploy --> Done(["Ready for Verification"])
+```
+
+---
+
+### 3. Continuous Integration & Security Pipeline (`.github/workflows/ci.yml`)
+
+```mermaid
+flowchart LR
+    Trigger(["Git Push / PR to main"]) --> Lint["1. Helm Lint<br/>(helm lint chart/)"]
+    Lint --> Build["2. Docker Build<br/>(Buildx multi-stage)"]
+    Build --> Scan["3. Trivy Security Scan<br/>(OS & Library Vulns)"]
+    Scan --> Gate{"Severity >= HIGH?"}
+    Gate -- Yes --> Fail(["Pipeline Fails<br/>(Block Merge)"])
+    Gate -- No --> Pass(["Pipeline Passes<br/>(Ready to Deploy)"])
+```
+
+---
+
+### 4. Part 4 Lab Microservices Architecture (`lab/`)
+
+```mermaid
+flowchart TD
+    subgraph Namespace["Namespace: debug-lab"]
+        Migrate["Job: migrate<br/>(restartPolicy: Never)"]
+        
+        Gateway["Deployment: gateway<br/>(Port 8080)"]
+        Backend["Deployment: backend<br/>(Port 8080)"]
+        Worker["Deployment: worker<br/>(emptyDir at /var/cache/app)"]
+        Metrics["Deployment: metrics<br/>(Requests: 50m, Limits: 200m)"]
+        Reporter["Deployment: reporter<br/>(SA: reporter)"]
+
+        SA["ServiceAccount: reporter"]
+        RB["RoleBinding: reporter-read<br/>(Subject: SA reporter)"]
+        Role["Role: reporter-read<br/>(Verbs: get, list, watch pods)"]
+        KubeAPI["Kubernetes API Server<br/>(kubernetes.default.svc)"]
+    end
+
+    Gateway -->|"http://backend.debug-lab.svc:8080"| Backend
+    Reporter -->|"Token Authentication"| SA
+    SA --> RB
+    RB --> Role
+    Role -->|"List Pods"| KubeAPI
+```
+
+---
+
 ## 1. How to Run and Verify
 
 ### Prerequisites

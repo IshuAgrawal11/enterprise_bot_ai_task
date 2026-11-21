@@ -5,6 +5,35 @@
 #### High-Level Approach
 Migrating live traffic requires running both ingress controllers in parallel, verifying routing parity via canary testing, and performing a gradual, weighted DNS cutover.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as User / Client
+    participant DNS as DNS (Route53 / Cloudflare)
+    participant Nginx as Legacy Ingress (ingress-nginx)
+    participant Gateway as New Gateway API (Envoy / Cilium)
+    participant App as Backend Services
+
+    Note over Gateway,App: Phase 1: Dual Control Plane & Parallel Infrastructure deployed
+    Note over Gateway,App: Phase 2: Translate 40 Ingress to HTTPRoute & Shadow Test
+    
+    Client->>DNS: Request domain resolution
+    DNS-->>Client: 95% Nginx IP, 5% Gateway IP (Canary shift)
+    Client->>Gateway: Traffic subset arrives at Gateway
+    Gateway->>App: Forward request to backend
+    App-->>Client: Response 200 OK
+    
+    Note over DNS: Phase 3: Monitor p99 latency & error rate; shift 25% -> 50% -> 100%
+    
+    DNS-->>Client: 100% Gateway IP (Cutover complete)
+    Client->>Gateway: All production traffic routed via Gateway API
+    Gateway->>App: Forward request
+    
+    Note over Nginx: Phase 4: 72h soak period, then decommission ingress-nginx
+```
+
+---
+
 #### Phased Execution Order
 
 1. **Prerequisites & Infrastructure Deployment**:
