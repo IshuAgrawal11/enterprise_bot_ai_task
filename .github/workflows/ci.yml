@@ -25,15 +25,12 @@ jobs:
           helm lint chart/
           helm lint lab/broken-chart/
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build Docker Image
         run: |
-          docker build --load -t demo-service:local service/
+          docker build -t demo-service:local service/
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'demo-service:local'
           format: 'table'
