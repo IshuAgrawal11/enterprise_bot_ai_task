@@ -1,0 +1,21 @@
+# Solution and fix notes
+solution.md
+fix.md
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

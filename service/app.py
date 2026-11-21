@@ -10,16 +10,21 @@ CONFIG_DIR = Path("/etc/config")
 
 
 def get_config_val(key: str, default: str) -> str:
+    env_value = os.getenv(key)
+    if env_value:
+        return env_value
+
     file_path = CONFIG_DIR / key
+
     if file_path.is_file():
         try:
             val = file_path.read_text(encoding="utf-8").strip()
             if val:
                 return val
-        except Exception:
+        except OSError:
             pass
-    return os.getenv(key, default)
 
+    return default
 
 @app.get("/")
 def root():
