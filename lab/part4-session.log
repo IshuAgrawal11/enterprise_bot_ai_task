@@ -806,4 +806,19 @@ to check progress.
 
 [31m9 check(s) failing[0m, 2 passing. Keep digging — every failure is a symptom.
 [1m[7m%[27m[1m[0m                                                                                                   [0m[27m[24m[Jsubhanshutripathi@Subhanshus-MacBook-Air lab % [K[?2004hggit add .[?2004l
-[1m[7m%[27m[1m[0m                                                                                                   [0m[27m[24m[Jsubhanshutripathi@Subhanshus-MacBook-Air lab % [K[?2004hggit commit        g  
+[1m[7m%[27m[1m[0m                                                                                                   [0m[27m[24m[Jsubhanshutripathi@Subhanshus-MacBook-Air lab % [K[?2004hggit commit        g  [1m[7m%[27m[1m[0m                                                                                                   [0m[27m[24m[Jsubhanshutripathi@Subhanshus-MacBook-Air lab % [K[?2004h../scenario.sh vei rify[?2004l
+==> verifying goal state in namespace debug-lab
+  [32mPASS[0m  migrate Job completed
+  [32mPASS[0m  deployment backend: 1/1 ready
+  [32mPASS[0m  deployment gateway: 1/1 ready
+  [32mPASS[0m  deployment worker: 1/1 ready
+  [31mFAIL[0m  deployment reporter: 0/1 ready
+  [32mPASS[0m  deployment metrics: 1/1 ready
+  [32mPASS[0m  no pods in CrashLoopBackOff
+  [32mPASS[0m  ServiceAccount debug-lab/reporter can list pods
+  [32mPASS[0m  backend answers on http://backend:8080/healthz
+  [32mPASS[0m  gateway /status reports backend=ok
+  [31mFAIL[0m  reporter /report does not return a pod count
+
+[31m2 check(s) failing[0m, 9 passing. Keep digging — every failure is a symptom.
+[1m[7m%[27m[1m[0m                                                                                                   [0m[27m[24m[Jsubhanshutripathi@Subhanshus-MacBook-Air lab % [K[?2004h
